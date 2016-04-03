@@ -391,7 +391,7 @@ opjs.Application.prototype.end = function(){};
   };
   
   application.eval = function( code ){
-    var result = undefined;
+    var result = "";
     try{
       result = eval( "("+ code +")" );
     }catch ( err ){
