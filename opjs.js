@@ -2,6 +2,10 @@ var opjs = this;
 
 /* Pure JavaScripts */
 
+opjs.is_undef = function( value ){
+  return ( typeof value === "undefined" );
+};
+
 (function( vars ){
   var s_vars = {};
   
@@ -66,7 +70,7 @@ opjs.Pattern = function( value, pattern, flags ){
 };
 opjs.Pattern.prototype.match = function( value ){
   var matches = this.m_regex.exec( value );
-  return ( null === matches ) ? null : { value : this.m_value, matches : matches, head : RegExp.leftContext, tail : RegExp.rightContext };
+  return ( null === matches ) ? null : { "value" : this.m_value, "matches" : matches, "head" : RegExp.leftContext, "tail" : RegExp.rightContext };
 };
 
 (function( pattern ){
@@ -82,7 +86,7 @@ opjs.Pattern.prototype.match = function( value ){
   };
   
   pattern.match = function( type, value ){
-    if ( undefined === s_patterns[ type ] ) return null;
+    if ( opjs.is_undef( s_patterns[ type ] ) ) return null;
     
     var patterns_len = s_patterns[ type ].length;
     for ( var i = 0; i < patterns_len; ++i ){
@@ -93,9 +97,9 @@ opjs.Pattern.prototype.match = function( value ){
   };
   
   pattern.matches = function( type, value ){
-    if ( undefined === s_patterns[ type ] ) return [];
+    if ( opjs.is_undef( s_patterns[ type ] ) ) return [];
     
-  　var matches = [];
+    var matches = [];
     var patterns_len = s_patterns[ type ].length;
     for ( var i = 0; i < patterns_len; ++i ){
       var result = s_patterns[ type ][ i ].match( value );
@@ -121,14 +125,14 @@ opjs.Pattern.prototype.match = function( value ){
 
 (function( time ){
   time.LocalTime = function( year, month, date, hour, min, sec, msec ){
-    if ( typeof hour === "undefined" ) hour = 0;
-    if ( typeof min === "undefined" )  min = 0;
-    if ( typeof sec === "undefined" )  sec = 0;
-    if ( typeof msec === "undefined" ) msec = 0;
+    if ( opjs.is_undef( month ) ) month = 1;
+    if ( opjs.is_undef( date ) ) date = 1;
+    if ( opjs.is_undef( hour ) ) hour = 0;
+    if ( opjs.is_undef( min ) )  min = 0;
+    if ( opjs.is_undef( sec ) )  sec = 0;
+    if ( opjs.is_undef( msec ) ) msec = 0;
     
-    var value = ( typeof year === "undefined" ) ? new Date() : new Date( year, month - 1, date, hour, min, sec, msec );
-    
-    this.m_value = value;
+    this.m_value = ( opjs.is_undef( year ) ) ? new Date() : new Date( year, month - 1, date, hour, min, sec, msec );
   };
   time.LocalTime.prototype.year = function(){
     return this.m_value.getFullYear();
@@ -161,9 +165,9 @@ opjs.Pattern.prototype.match = function( value ){
     return this.toString();
   };
   time.LocalTime.prototype.is_same_date = function( local_time ){
-    if ( this.date() != local_time.date() ) return false;
+    if ( this.date()  != local_time.date() )  return false;
     if ( this.month() != local_time.month() ) return false;
-    if ( this.year() != local_time.year() ) return false;
+    if ( this.year()  != local_time.year() )  return false;
     return true;
   };
   
@@ -180,7 +184,7 @@ opjs.Pattern.prototype.match = function( value ){
   };
   
   time.format = function( type, local_time ){
-    if ( typeof local_time === "undefined" ) local_time = time.local_time();
+    if ( opjs.is_undef( local_time ) ) local_time = time.local_time();
     
     var value = "";
     switch ( type ){
@@ -262,7 +266,7 @@ opjs.Pattern.prototype.match = function( value ){
   };
   
   time.holiday = function( year, month, date, day, holidays ){
-    if ( typeof holidays === "undefined" ) holidays = {};
+    if ( opjs.is_undef( holidays ) ) holidays = {};
     
     do{
       if ( ! ( year in holidays ) ) break;
@@ -275,16 +279,16 @@ opjs.Pattern.prototype.match = function( value ){
   
   time.date = function( year, month, date, day, holidays ){
     return {
-      year    : year,
-      month   : month,
-      date    : date,
-      day     : day,
-      holiday : opjs.time.holiday( year, month, date, ( "index" in day ) ? day.index : day, holidays ),
+      "year"    : year,
+      "month"   : month,
+      "date"    : date,
+      "day"     : day,
+      "holiday" : opjs.time.holiday( year, month, date, ( "index" in day ) ? day.index : day, holidays ),
     };
   };
   
   time.dates = function( year, month, string_days ){
-    if ( typeof string_days === "undefined" ) string_days = time.string_days();
+    if ( opjs.is_undef( string_days ) ) string_days = time.string_days();
     
     var dates = [];
     var first_date_time = time.first_date_time( year, month );
@@ -292,13 +296,13 @@ opjs.Pattern.prototype.match = function( value ){
     var last_date = last_date_time.date();
     var day = first_date_time.day();
     for ( var date = 1; date <= last_date; ++date, day = time.add_day( day ) ){
-      dates.push({ date : date, day : { index : day, string : string_days[ day ] } });
+      dates.push({ "date" : date, "day" : { "index" : day, "string" : string_days[ day ] } });
     }
     return dates;
   };
   
   time.add_day = function( base, add ){
-    if ( typeof add === "undefined" ) add = 1;
+    if ( opjs.is_undef( add ) ) add = 1;
     
     return ( base + add ) % 7;
   };
@@ -315,10 +319,10 @@ opjs.Pattern.prototype.match = function( value ){
         var method_name = method_names[ i ];
         
         instance = instance[ method_name ];
-        if ( undefined === instance ) return undefined;
+        if ( opjs.is_undef( instance ) ) return undefined;
       }
     }while ( false );
-    return instance[ name ].apply( instance, args );
+    return instance.apply( instance, args );
   };
 })(opjs.method = opjs.method || {});
 
@@ -361,7 +365,7 @@ opjs.Application.prototype.end = function(){};
 
 (function( application ){
   application.run = function( application_type, request ){
-    if ( typeof request === "undefined" ) request = {};
+    if ( opjs.is_undef( request ) ) request = {};
     
     var _application = null;
     try{
@@ -372,13 +376,12 @@ opjs.Application.prototype.end = function(){};
       _application.end();
     }catch ( err ){
       opjs.log.err( opjs.string.format( "{0}\n{1}\n{2}", err, err.stack, opjs.json.encode( request ) ) );
-      _application.response( null );
     }
-    return ( null !== _application ) ? _application.response() : null;
+    return ( null !== _application ) ? _application.response() : {};
   };
   
   application.rules_to_array = function( rules, title ){
-    var array = ( typeof title === "undefined" ) ? [] : [ title ];
+    var array = ( opjs.is_undef( title ) ) ? [] : [ title ];
     var rules_len = rules.length;
     for ( var i = 0; i < rules_len; ++i ){
       var rule = rules[ i ];
@@ -388,12 +391,13 @@ opjs.Application.prototype.end = function(){};
   };
   
   application.eval = function( code ){
+    var result = undefined;
     try{
-      eval( code );
+      result = eval( "("+ code +")" );
     }catch ( err ){
-      return { msg : err.toString(), stack : err.stack };
+      return { "msg" : err.toString(), "stack" : err.stack };
     }
-    return undefined;
+    return { "result" : result };
   };
 })(opjs.application = opjs.application || {});
 
@@ -410,7 +414,7 @@ opjs.Log.prototype.write = function( type, msg ){};
   };
   
   log.timestamp = function( local_time ){
-    if ( typeof local_time === "undefined" ) local_time = opjs.time.local_time();
+    if ( opjs.is_undef( local_time ) ) local_time = opjs.time.local_time();
     
     return opjs.string.format( "[{0}]", opjs.time.format( "all", local_time ) );
   };
