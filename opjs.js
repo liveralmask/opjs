@@ -308,8 +308,17 @@ opjs.Pattern.prototype.match = function( value ){
   method.call = function(){
     var args = Array.prototype.slice.call( arguments );
     var instance = args.shift();
-    var name = args.shift();
-    return ( undefined === instance[ name ] ) ? undefined : instance[ name ].apply( instance, args );
+    do{
+      var method_names = args.shift().split( "." );
+      var method_names_len = method_names.length;
+      for ( var i = 0; i < method_names_len; ++i ){
+        var method_name = method_names[ i ];
+        
+        instance = instance[ method_name ];
+        if ( undefined === instance ) return undefined;
+      }
+    }while ( false );
+    return instance[ name ].apply( instance, args );
   };
 })(opjs.method = opjs.method || {});
 
@@ -376,6 +385,15 @@ opjs.Application.prototype.end = function(){};
       array.push( opjs.string.format( "{0} /{1}/{2}", rule.name, rule.pattern, rule.flags ) );
     }
     return array;
+  };
+  
+  application.eval = function( code ){
+    try{
+      eval( code );
+    }catch ( err ){
+      return { msg : err.toString(), stack : err.stack };
+    }
+    return undefined;
   };
 })(opjs.application = opjs.application || {});
 
@@ -468,5 +486,27 @@ opjs.Log.prototype.write = function( type, msg ){};
     var _element = args.shift();
     if ( 1 == args.length ) _element.innerHTML = args[ 0 ];
     return _element.innerHTML;
+  };
+  
+  element.get = function( id ){
+    return opjs.dom.document().getElementById( id );
+  };
+  
+  element.gets = function( name ){
+    return opjs.dom.document().getElementsByName( name );
+  };
+  
+  element.add = function( _parent, _child ){
+    _parent.appendChild( _child );
+  };
+  
+  element.remove = function( _parent, _child ){
+    _parent.removeChild( _child );
+  };
+  
+  element.removes = function( _element ){
+    while ( _element.firstChild ){
+      _element.removeChild( _element.firstChild );
+    }
   };
 })(opjs.dom.element = opjs.dom.element || {});
