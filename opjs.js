@@ -315,9 +315,19 @@ opjs.Pattern.prototype.match = function( value ){
 
 (function( object ){
   object.inherits = function( self, parent ){
-    self.prototype = new parent();
+    var keys = Object.keys( parent );
+    var keys_len = keys.length;
+    if ( 0 == keys_len ){
+      self.prototype = new parent();
+    }else{
+      for ( var i = 0; i < keys_len; ++i ){
+        var key = keys[ i ];
+        
+        self[ key ] = parent[ key ];
+      }
+    }
   };
-})(opjs.class = opjs.class || {});
+})(opjs.object = opjs.object || {});
 
 opjs.Application = function(){
   this.m_is_update = false;
