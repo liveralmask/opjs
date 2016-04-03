@@ -317,7 +317,7 @@ opjs.Pattern.prototype.match = function( value ){
   object.inherits = function( self, parent ){
     var keys = Object.keys( parent );
     var keys_len = keys.length;
-    if ( 0 == keys_len ){
+    if ( 0 === keys_len ){
       self.prototype = new parent();
     }else{
       for ( var i = 0; i < keys_len; ++i ){
@@ -422,14 +422,17 @@ opjs.Log.prototype.write = function( type, msg ){};
   };
 })(opjs.log = opjs.log || {});
 
-/* DOM */
 (function( dom ){
-  
+  var s_document = document;
+  dom.document = function(){
+    if ( 1 == arguments.length ) s_document = arguments[ 0 ];
+    return s_document;
+  };
 })(opjs.dom = opjs.dom || {});
 
 (function( element ){
   element.create = function( tag_name, attributes, values ){
-    var _element = document.createElement( tag_name );
+    var _element = opjs.dom.document().createElement( tag_name );
     var attr_keys = Object.keys( attributes );
     var attr_keys_len = attr_keys.length;
     for ( var i = 0; i < attr_keys_len; ++i ){
