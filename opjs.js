@@ -6,6 +6,10 @@ opjs.is_undef = function( value ){
   return ( typeof value === "undefined" );
 };
 
+opjs.is_def = function( value ){
+  return ! opjs.is_undef( value );
+};
+
 (function( vars ){
   var s_vars = {};
   
@@ -312,17 +316,16 @@ opjs.Pattern.prototype.match = function( value ){
   method.call = function(){
     var args = Array.prototype.slice.call( arguments );
     var instance = args.shift();
-    do{
-      var method_names = args.shift().split( "." );
-      var method_names_len = method_names.length;
-      for ( var i = 0; i < method_names_len; ++i ){
-        var method_name = method_names[ i ];
-        
-        instance = instance[ method_name ];
-        if ( opjs.is_undef( instance ) ) return undefined;
-      }
-    }while ( false );
-    return instance.apply( instance, args );
+    var method_names = args.shift().split( "." );
+    var method_names_len = method_names.length;
+    var method = instance;
+    for ( var i = 0; i < method_names_len; ++i ){
+      var method_name = method_names[ i ];
+      
+      method = method[ method_name ];
+      if ( opjs.is_undef( method ) ) return undefined;
+    }
+    return method.apply( instance, args );
   };
 })(opjs.method = opjs.method || {});
 
@@ -330,15 +333,12 @@ opjs.Pattern.prototype.match = function( value ){
   object.inherits = function( self, parent ){
     var keys = Object.keys( parent );
     var keys_len = keys.length;
-    if ( 0 === keys_len ){
-      self.prototype = new parent();
-    }else{
-      for ( var i = 0; i < keys_len; ++i ){
-        var key = keys[ i ];
-        
-        self[ key ] = parent[ key ];
-      }
+    for ( var i = 0; i < keys_len; ++i ){
+      var key = keys[ i ];
+      
+      self[ key ] = parent[ key ];
     }
+    if ( 0 === keys_len ) self.prototype = new parent();
   };
 })(opjs.object = opjs.object || {});
 
@@ -445,7 +445,7 @@ opjs.Log.prototype.write = function( type, msg ){};
 })(opjs.log = opjs.log || {});
 
 (function( dom ){
-  var s_document = document;
+  var s_document = null;
   dom.document = function(){
     if ( 1 == arguments.length ) s_document = arguments[ 0 ];
     return s_document;
