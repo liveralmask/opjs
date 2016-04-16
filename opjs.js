@@ -10,6 +10,27 @@ opjs.is_def = function( value ){
   return ! opjs.is_undef( value );
 };
 
+opjs.is_string = function( value ){
+  return ( typeof value === "string" );
+};
+
+opjs.is_array = function( value ){
+  return ( value instanceof Array );
+};
+
+opjs.is_kvary = function( value ){
+  return ( typeof value === "object" );
+};
+
+(function( array ){
+  array.each = function( values, callback ){
+    var values_len = values.length;
+    for ( var i = 0; i < values_len; ++i ){
+      if ( false === callback( values[ i ], i ) ) break;
+    }
+  };
+})(opjs.array = opjs.array || {});
+
 (function( vars ){
   var s_vars = {};
   
@@ -27,14 +48,14 @@ opjs.is_def = function( value ){
     var args = Array.prototype.slice.call( arguments );
     var head = "";
     var tail = args.shift();
-    var args_len = args.length;
-    var pattern = new opjs.Pattern( undefined, "\{([0-9]+)\}" );
+    if ( opjs.is_kvary( args[ 0 ] ) ) args = args[ 0 ];
+    var pattern = new opjs.Pattern( undefined, "\{([a-zA-Z0-9_]+)\}" );
     while ( "" !== tail ){
       var match = pattern.match( tail );
       if ( null === match ) break;
       
-      var index = Number( match.matches[ 1 ] );
-      head += ( index < args_len ) ? match.head + args[ index ] : match.matches[ 0 ];
+      var key = match.matches[ 1 ];
+      head += ( key in args ) ? match.head + args[ key ] : match.matches[ 0 ];
       tail = match.tail;
     }
     return head + tail;
@@ -50,21 +71,6 @@ opjs.is_def = function( value ){
   
   string.padding_zero = function( digit, value ){
     return ( string.multi( "0", digit ) + value ).slice( - digit );
-  };
-  
-  string.replace = function( format, values ){
-    var head = "";
-    var tail = format;
-    var pattern = new opjs.Pattern( undefined, "\{([a-zA-Z0-9_]+)\}" );
-    while ( "" !== tail ){
-      var match = pattern.match( tail );
-      if ( null === match ) break;
-      
-      var key = match.matches[ 1 ];
-      head += ( key in values ) ? match.head + values[ key ] : match.matches[ 0 ];
-      tail = match.tail;
-    }
-    return head + tail;
   };
 })(opjs.string = opjs.string || {});
 
@@ -92,11 +98,10 @@ opjs.Pattern.prototype.match = function( value ){
   pattern.match = function( type, value ){
     if ( opjs.is_undef( s_patterns[ type ] ) ) return null;
     
-    var patterns_len = s_patterns[ type ].length;
-    for ( var i = 0; i < patterns_len; ++i ){
-      var result = s_patterns[ type ][ i ].match( value );
+    opjs.array.each( s_patterns[ type ], function( _pattern, i ){
+      var result = _pattern.match( value );
       if ( null !== result ) return result;
-    }
+    });
     return null;
   };
   
@@ -104,11 +109,10 @@ opjs.Pattern.prototype.match = function( value ){
     if ( opjs.is_undef( s_patterns[ type ] ) ) return [];
     
     var matches = [];
-    var patterns_len = s_patterns[ type ].length;
-    for ( var i = 0; i < patterns_len; ++i ){
-      var result = s_patterns[ type ][ i ].match( value );
+    opjs.array.each( s_patterns[ type ], function( _pattern, i ){
+      var result = _pattern.match( value );
       if ( null !== result ) matches.push( result );
-    }
+    });
     return matches;
   };
 })(opjs.pattern = opjs.pattern || {});
@@ -137,6 +141,9 @@ opjs.Pattern.prototype.match = function( value ){
     if ( opjs.is_undef( msec ) ) msec = 0;
     
     this.m_value = ( opjs.is_undef( year ) ) ? new Date() : new Date( year, month - 1, date, hour, min, sec, msec );
+  };
+  time.LocalTime.prototype.value = function(){
+    return this.m_value;
   };
   time.LocalTime.prototype.year = function(){
     return this.m_value.getFullYear();
@@ -173,6 +180,23 @@ opjs.Pattern.prototype.match = function( value ){
     if ( this.month() != local_time.month() ) return false;
     if ( this.year()  != local_time.year() )  return false;
     return true;
+  };
+  
+  time.MeasureTime = function(){
+    this.start();
+  };
+  time.MeasureTime.prototype.start = function(){
+    this.m_start_time = new time.LocalTime();
+    this.m_end_time = this.m_start_time;
+    this.m_count = 0;
+  };
+  time.MeasureTime.prototype.update = function(){
+    this.m_end_time = new time.LocalTime();
+    this.m_count += 1;
+    return this.m_end_time.value() - this.m_start_time.value();
+  };
+  time.MeasureTime.prototype.count = function(){
+    return this.m_count;
   };
   
   time.local_time = function( year, month, date, hour, min, sec, msec ){
@@ -317,15 +341,12 @@ opjs.Pattern.prototype.match = function( value ){
     var args = Array.prototype.slice.call( arguments );
     var instance = args.shift();
     var method_names = args.shift().split( "." );
-    var method_names_len = method_names.length;
     var method = instance;
-    for ( var i = 0; i < method_names_len; ++i ){
-      var method_name = method_names[ i ];
-      
+    opjs.array.each( method_names, function( method_name, i ){
       method = method[ method_name ];
       if ( opjs.is_undef( method ) ) return undefined;
-    }
-    return method.apply( instance, args );
+    });
+    return method.apply( instance, args[ 0 ] );
   };
 })(opjs.method = opjs.method || {});
 
@@ -333,11 +354,9 @@ opjs.Pattern.prototype.match = function( value ){
   object.inherits = function( self, parent ){
     var keys = Object.keys( parent );
     var keys_len = keys.length;
-    for ( var i = 0; i < keys_len; ++i ){
-      var key = keys[ i ];
-      
+    opjs.array.each( keys, function( key, i ){
       self[ key ] = parent[ key ];
-    }
+    });
     if ( 0 === keys_len ) self.prototype = new parent();
   };
 })(opjs.object = opjs.object || {});
@@ -382,22 +401,10 @@ opjs.Application.prototype.end = function(){};
   
   application.rules_to_array = function( rules, title ){
     var array = ( opjs.is_undef( title ) ) ? [] : [ title ];
-    var rules_len = rules.length;
-    for ( var i = 0; i < rules_len; ++i ){
-      var rule = rules[ i ];
+    opjs.array.each( rules, function( rule, i ){
       array.push( opjs.string.format( "{0} /{1}/{2}", rule.name, rule.pattern, rule.flags ) );
-    }
+    });
     return array;
-  };
-  
-  application.eval = function( code ){
-    var result = "";
-    try{
-      result = eval( "("+ code +")" );
-    }catch ( err ){
-      return { "msg" : err.toString(), "stack" : err.stack };
-    }
-    return { "result" : result };
   };
 })(opjs.application = opjs.application || {});
 
@@ -408,8 +415,11 @@ opjs.Log.prototype.write = function( type, msg ){};
 
 (function( log ){
   var s_log = null;
-  log.log = function( value ){
-    if ( 1 == arguments.length ) s_log = value;
+  log.set = function( value ){
+    s_log = value;
+    return s_log;
+  };
+  log.get = function(){
     return s_log;
   };
   
@@ -444,24 +454,55 @@ opjs.Log.prototype.write = function( type, msg ){};
   };
 })(opjs.log = opjs.log || {});
 
-(function( dom ){
+(function( document ){
   var s_document = null;
-  dom.document = function(){
-    if ( 1 == arguments.length ) s_document = arguments[ 0 ];
+  document.set = function( value ){
+    s_document = value;
     return s_document;
   };
-})(opjs.dom = opjs.dom || {});
+  document.get = function(){
+    return s_document;
+  };
+  
+  document.html_to_text = function( value ){
+    var head = "";
+    var tail = value;
+    var pattern = new opjs.Pattern( undefined, "([&'`\"<>])" );
+    while ( "" !== tail ){
+      var match = pattern.match( tail );
+      if ( null === match ) break;
+      
+      head += match.head;
+      switch ( match.matches[ 1 ] ){
+      case '&': head += "&amp;";  break;
+      case "'": head += "&#x27;"; break;
+      case '`': head += "&#x60;"; break;
+      case '"': head += "&quot;"; break;
+      case '<': head += "&lt;";   break;
+      case '>': head += "&gt;";   break;
+      }
+      tail = match.tail;
+    }
+    return head + tail;
+  };
+})(opjs.document = opjs.document || {});
+
+(function( event ){
+  event.add = function( target, name, callback ){
+    target.addEventListener( name, callback );
+  };
+})(opjs.document.event = opjs.document.event || {});
 
 (function( element ){
   element.create = function( tag_name, attributes, values ){
-    var _element = opjs.dom.document().createElement( tag_name );
+    if ( opjs.is_undef( attributes ) ) attributes = {};
+    if ( opjs.is_undef( values ) ) values = {};
+    
+    var _element = opjs.document.get().createElement( tag_name );
     var attr_keys = Object.keys( attributes );
-    var attr_keys_len = attr_keys.length;
-    for ( var i = 0; i < attr_keys_len; ++i ){
-      var attr_key = attr_keys[ i ];
-      
+    opjs.array.each( attr_keys, function( attr_key, i ){
       element.attr( _element, attr_key, attributes[ attr_key ] );
-    }
+    });
     if ( "text" in values ){
       element.text( _element, values.text );
     }else if ( "html" in values ){
@@ -493,24 +534,114 @@ opjs.Log.prototype.write = function( type, msg ){};
   };
   
   element.get = function( id ){
-    return opjs.dom.document().getElementById( id );
+    return opjs.document.get().getElementById( id );
   };
   
   element.gets = function( name ){
-    return opjs.dom.document().getElementsByName( name );
+    return opjs.document.get().getElementsByName( name );
   };
   
-  element.add = function( _parent, _child ){
-    _parent.appendChild( _child );
+  element.tags = function( name ){
+    return opjs.document.get().getElementsByTagName( name );
   };
   
-  element.remove = function( _parent, _child ){
-    _parent.removeChild( _child );
+  element.add = function( parent, child ){
+    parent.appendChild( child );
   };
   
-  element.removes = function( _element ){
-    while ( _element.firstChild ){
-      _element.removeChild( _element.firstChild );
+  element.insert = function( parent, before, after ){
+    parent.insertBefore( after, before );
+  };
+  
+  element.remove = function( parent, child ){
+    parent.removeChild( child );
+  };
+  
+  element.removes = function( parent ){
+    while ( parent.firstChild ){
+      parent.removeChild( parent.firstChild );
     }
   };
-})(opjs.dom.element = opjs.dom.element || {});
+  
+  element.thead = function( values, attributes ){
+    var thead = element.create( "thead" );
+    var tr = element.create( "tr" );
+    opjs.array.each( values, function( value, i ){
+      element.add( tr, element.create( "th", attributes, { "text" : value } ) );
+    });
+    element.add( thead, tr );
+    return thead;
+  };
+  
+  element.tfoot = function( values, attributes ){
+    var tfoot = element.create( "tfoot" );
+    var tr = element.create( "tr" );
+    opjs.array.each( values, function( value, i ){
+      element.add( tr, element.create( "td", attributes, { "text" : values[ i ] } ) );
+    });
+    element.add( tfoot, tr );
+    return tfoot;
+  };
+  
+  element.tbody = function( values, attributes ){
+    var tbody = element.create( "tbody" );
+    opjs.array.each( values, function( value, value_i ){
+      var tr = element.create( "tr" );
+      var tds = element.tds( value, attributes );
+      opjs.array.each( tds, function( td, td_i ){
+        element.add( tr, td );
+      });
+      element.add( tbody, tr );
+    });
+    return tbody;
+  };
+  
+  element.tds = function( value, attributes ){
+    var tds = [];
+    opjs.array.each( ( value instanceof Array ) ? value : [ value ], function( data, i ){
+      var td = element.create( "td", attributes );
+      if ( "text" in data ){
+        element.text( td, data.text );
+      }else if ( "html" in data ){
+        element.html( td, data.html );
+      }
+      if ( "attributes" in data ){
+        var attr_keys = Object.keys( data.attributes );
+        opjs.array.each( attr_keys, function( attr_key, i ){
+          element.attr( td, attr_key, opjs.string.format( "{0};{1}", element.attr( td, attr_key ), data.attributes[ attr_key ] ) );
+        });
+      }
+      tds.push( td );
+    });
+    return tds;
+  };
+  
+  element.array_to_table = function( body, head, foot, attributes ){
+    if ( opjs.is_undef( attributes ) ){
+      attributes = {};
+    }
+    var table = element.create( "table", attributes.table );
+    
+    if ( opjs.is_def( head ) ){
+      element.add( table, opjs.document.element.thead( head, attributes.head ) );
+    }
+    
+    if ( opjs.is_def( foot ) ){
+      element.add( table, opjs.document.element.tfoot( foot, attributes.foot ) );
+    }
+    
+    element.add( table, opjs.document.element.tbody( body, attributes.body ) );
+    return table;
+  };
+})(opjs.document.element = opjs.document.element || {});
+
+(function( xpath ){
+  xpath.html = function( expression, root ){
+    try{
+      if ( opjs.is_undef( root ) ) root = opjs.document.get();
+      return opjs.document.get().evaluate( expression, root, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null );
+    }catch ( err ){
+      return { "msg" : err.toString(), "stack" : err.stack };
+    }
+  };
+})(opjs.document.xpath = opjs.document.xpath || {});
