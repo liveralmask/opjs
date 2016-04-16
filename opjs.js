@@ -98,11 +98,12 @@ opjs.Pattern.prototype.match = function( value ){
   pattern.match = function( type, value ){
     if ( opjs.is_undef( s_patterns[ type ] ) ) return null;
     
+    var result = null;
     opjs.array.each( s_patterns[ type ], function( _pattern, i ){
-      var result = _pattern.match( value );
-      if ( null !== result ) return result;
+      result = _pattern.match( value );
+      if ( null !== result ) return false;
     });
-    return null;
+    return result;
   };
   
   pattern.matches = function( type, value ){
@@ -346,7 +347,7 @@ opjs.Pattern.prototype.match = function( value ){
       method = method[ method_name ];
       if ( opjs.is_undef( method ) ) return undefined;
     });
-    return method.apply( instance, args[ 0 ] );
+    return method.apply( instance, args );
   };
 })(opjs.method = opjs.method || {});
 
@@ -394,7 +395,7 @@ opjs.Application.prototype.end = function(){};
       if ( _application.is_update() ) _application.update();
       _application.end();
     }catch ( err ){
-      opjs.log.err( opjs.string.format( "{0}\n{1}\n{2}", err, err.stack, opjs.json.encode( request ) ) );
+      opjs.log.err( opjs.string.format( "{0}\n{1}\n{2}", err.toString(), err.stack, opjs.json.encode( request ) ) );
     }
     return ( null !== _application ) ? _application.response() : {};
   };
@@ -636,7 +637,7 @@ opjs.Log.prototype.write = function( type, msg ){};
 })(opjs.document.element = opjs.document.element || {});
 
 (function( xpath ){
-  xpath.html = function( expression, root ){
+  xpath.iterators = function( expression, root ){
     try{
       if ( opjs.is_undef( root ) ) root = opjs.document.get();
       return opjs.document.get().evaluate( expression, root, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null );
@@ -645,3 +646,19 @@ opjs.Log.prototype.write = function( type, msg ){};
     }
   };
 })(opjs.document.xpath = opjs.document.xpath || {});
+
+(function( stack ){
+  stack.get = function( offset ){
+    if ( opjs.is_undef( offset ) ) offset = 0;
+    
+    var stacks = [];
+    try{
+      throw new Error();
+    }catch ( err ){
+      stacks = err.stack.split( "\n" );
+      stacks.shift();
+      stacks = stacks.slice( offset );
+    }
+    return stacks.join( "\n" );
+  };
+})(opjs.stack = opjs.stack || {});
