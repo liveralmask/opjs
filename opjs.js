@@ -516,8 +516,19 @@ opjs.Log.prototype.write = function( type, msg ){};
     var args = Array.prototype.slice.call( arguments );
     var _element = args.shift();
     var key = args.shift();
-    if ( 1 == args.length ) _element.setAttribute( key, args[ 0 ] );
-    return _element.getAttribute( key );
+    var value = "";
+    switch ( key ){
+    case "readonly":{
+      if ( 1 == args.length ) _element.readOnly = args[ 0 ];
+      value = _element.readOnly;
+    }break;
+    
+    default:{
+      if ( 1 == args.length ) _element.setAttribute( key, args[ 0 ] );
+      value = _element.getAttribute( key );
+    }break;
+    }
+    return value;
   };
   
   element.text = function(){
